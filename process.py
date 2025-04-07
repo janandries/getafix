@@ -1,166 +1,22 @@
-from dataclasses import dataclass
-import bitstring
-import numpy as np
 import logging
 from gcode import GCodeMove
 import math
 from pattern import Pattern
 import re
 
-import tomli
-from util import reverse_8_bits, extract_every_second_bit, list_of_bits_to_list_of_int
+from util import list_of_bits_to_list_of_int
 from config import Config
 
 logger = logging.getLogger(__name__)
 
-class Processor():
-    """ A class that processes GCode files and converts them to a simplified pattern format.
-    
-    This processor reads GCode files line by line, detecting layer changes and extrusion moves.
-    For each layer, it builds up a pattern of vertical lines based on the extrusion moves,
-    and converts that pattern to a simplified output format.
-
-    The processor expects GCode moves to be vertical (constant X coordinate) and will raise
-    a ValueError if non-vertical moves are encountered.
-    """
-    def __init__(self):
-        logger.debug("Initialized Processor")
-        self._layer_count = 0
-        self._output = ""
-        self.X_MAXIMUM_POSITION = 1388 #should come from the congig!
-
-        try:
-            with open('machine.toml', 'rb') as f:
-                self.machine = tomli.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load machine.toml configuration file: {str(e)}")
-            raise RuntimeError("Could not load required machine configuration") from e
-
-
-    def convert_to_output(self, pattern: Pattern, layer: int):
-        """ takes in a pattern, and returns Asterix gcode 
-        
-        note that X is the position of the hopper, and Y is the position of the print head.
-        The hopper moves oppostie to the print head
-        """
-        EXPECTED_LEN_ONE_ENTRY = 71
-        n = pattern.get_number_of_rows() * EXPECTED_LEN_ONE_ENTRY + 1
-        output = self.layer_begin_cmd(layer)
-        
-        #the gcode for a layer consists of:
-        # deposit the material
-
-        #several states we pass through:
-        # 1. only hopper moves (deposit layer)
-        # 2. hopper moves in tandem with print head to initial position
-        # 3. hopper moves in tandem with print head, and we deposit water
-        # 4. hoppe arrives and we need to only move printhead
-        # 5. print head rrives at end, prepare for eecond layer
-        # 6. print head moves back alone
-        # 7. done
-
-        p = pattern
-
-        y_feed_rate_when_move_together = math.floor(math.sqrt(2) * self.machine.y_feed_rate)
-
-        #1
-        output += f'G1 X{self.machine.x_maximum_position} F{self.machine.deposition_rate}; deposit material'
-
-        #2
-        current_y_pos =  self.machine.y_initial_position
-        current_hopper_pos = self.machine.x_maximum_position - current_y_pos
-        output += f"G1 Y{current_y_pos} X{current_hopper_pos} F{y_feed_rate_when_move_together}\n"    
-        
-        #3
-        for p in pattern:
-            current_y_pos += 1
-            current_hopper_pos = self.machine.x_maximum_position - current_y_pos
-
-            current_y_pos += 1
-            current_hopper_pos = self.machine.x_maximum_position - current_y_pos # moves hopper oppostie to the print head
-            hopper_pos = max(hopper_pos, 0) #stop when the hopper reaches zero position
-
-            if y_pos == self.machine.y_initial_position:
-                output += f"G1 Y{y_pos} X{hopper_pos} F{feedspeed}\n"
-                y_pos += 1
-            else:
-                output += f"G1 Y{y_pos} X{hopper_pos} F{feedspeed}\n"
-                y_pos += 1
-                if hopper_pos == 0:
-                    #when the hopper reaches its begin position, we need to reduce the feed speed
-                    #by sqrt(2) as klipper thinks it was moving in two dimensions, and now in one
-                    feedspeed = 6000
-
-            if y_pos % 2 == 0:
-                # to reduce the frequency of the valves, we only change the valves every other row (i.e. milimeter)
-                output += "VALVES_SET VALUES="
-                for i in range(len(p) // 2):
-                    reversed_bitset = reverse_8_bits(bitstring(p[i]))
-                    output += f"{reversed_bitset.uint},"
-                output = output.rstrip(',') + '\n'
-
-        output += self.layer_return_cmd(y_pos)
-
-        return output
-    
-
-    
-    def process(self, file: str, output_filename: str):
-        OUTPUT_TEMP_FILENAME = output_filename
-        previous_move = GCodeMove(0,0,0,0) # previous gcode move
-        self._pattern = Pattern(self.machine2pattern_coord((self.machine.x_size, self.machine.y_size)))
-        with open(file, 'r') as f:
-            with open(OUTPUT_TEMP_FILENAME, 'w+') as f_out:
-                for line in f:
-                    if line.upper().startswith(";LAYER:"):
-                        if self._layer_count > 0:
-                            out = self.convert_to_output(self._pattern, self._layer_count)
-                            f_out.write(out + '\n')
-                            self._pattern.clear()
-                        self._layer_count += 1
-                    else:
-                        try:
-                            if self._layer_count == 0:
-                                continue
-                            current_move = GCodeMove.fromstring(line)
-                            if current_move.is_G1_command():
-                                tolerance = 1e-8
-                                if abs(current_move.X - previous_move.X) > tolerance:
-                                    raise ValueError("Begin and end coordinates do not have the same X-value")
-
-                                begin, end = (current_move, previous_move) if current_move.Y <= previous_move.Y else (previous_move, current_move)
-                                self._pattern.add_line(self.get_pattern_coord(begin.X), self.get_pattern_coord(begin.Y), self.get_pattern_coord(end.Y))
-                            previous_move = current_move
-                        except ValueError:
-                            pass #logger.warning(f"Invalid move encountered: {line.strip()}")
-
-
-
-                
-
-# determine number of layers
-
-
-# loop over all layers
-
-#FUNCTION: for current layer, build up a matrix containing the spray pattern, line by line from the gcode file
-#FUNCTION: Take a spray pattern, and generate the G-code for it
-
-
-# per layer, build up a matrix of the full bed dimensions (read from a config)
-
-# step through all G code commands, looking for G1 and G0.
-# all G1 codes create a line, and should be converted to 1's in the appropiate places in the matrix
-
-# matrix.add_spray_line(gcode command)
-
-# when fininshed with the layer, convert the layer matrix into G code that the Asterix understands.
-# matrix.convert_to_output
-
 def print_begin_cmd(number_of_layers: int) -> str:
     return (
         f"SET_PRINT_STATS_INFO TOTAL_LAYER={number_of_layers}\n"
-        "G28 X Y SET_FIRST_PASS G4 P3000 ;wait for servo\n"
+        "G90\n"
+        "G28 X Y\n"
+        "SET_FIRST_PASS\n"
+        "RESET_Z_PLATFORM\n"
+        "G4 P1500  ; wait for servo\n"
         "VALVES_SET VALUES=0,0,0,0,0,0,0,0,0,0,0\n"
         "VALVES_ENABLE ; change to VALVES_DISABLE to do run without valves active\n\n"
     )
@@ -209,7 +65,6 @@ def layer_end_cmd(y_start_bed_pos: int) -> str:
         "G1 Y0\n"
     )
 
-
 # a function that converts a G-code and extracts the coordinates of the matrix object
 def convert_gcode_to_pattern(gcode: str, config: Config) -> Pattern:
     ps = (config.machine2pattern_coord(config.bed_parameters.x_size_mm),config.bed_parameters.y_size_mm)
@@ -239,7 +94,6 @@ def convert_gcode_to_pattern(gcode: str, config: Config) -> Pattern:
 
     return pattern
     
-
 def convert_pattern_row_to_gcode(row: list[int]) -> str:
     if any(val > 0 for val in row):
         pass # just for debugging
@@ -273,7 +127,7 @@ def convert_to_output(pattern: Pattern, layer: int, config: Config) -> str:
 
     feedrate = v_combined
     #first stroke, x-axis moves 'down'wards, y-axis upwards
-    
+
     set_valves = True
     for i, row in enumerate(pattern.T):
         output += f"G1 Y{y_dest} X{x_dest} F{feedrate}\n"

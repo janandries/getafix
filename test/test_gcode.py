@@ -16,10 +16,10 @@ def test_gcodemove_init():
     assert g.is_G1_command() == True
 
     g = GCodeMove.fromstring("G0 Y0 Z4")
-    assert g.X == 0
+    assert g.X == None
     assert g.Y == 0
     assert g.Z == 4
-    assert g.E == 0
+    assert g.E == None
     assert g.is_G1_command() == False
 
     with pytest.raises(ValueError):

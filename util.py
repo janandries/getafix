@@ -50,8 +50,6 @@ def reverse_8_bits(n: np.uint8):
         return b.uint
     else:
         raise(ValueError(f"Provided value is larger than 8 bits (value: {n} > 256)"))
-    
-
 
 def list_of_bits_to_list_of_int(bits: np.ndarray[np.uint8]) -> np.ndarray[np.uint8]:
     """Convert a numpy array of bits to a numpy array of unsigned integers.

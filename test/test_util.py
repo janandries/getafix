@@ -40,12 +40,12 @@ def test_reverse_bits2():
 
 def test_list_of_bits_to_list_of_int():
     # Test basic conversion
-    bits = np.array([1,0,1,0,1,0,1,0])  # 85 in binary
-    assert np.array_equal(list_of_bits_to_list_of_int(bits), np.array([85], dtype=np.uint8))
+    bits = np.array([1,0,1,0,1,0,1,0])  # 170 in binary
+    assert np.array_equal(list_of_bits_to_list_of_int(bits), np.array([170], dtype=np.uint8))
 
     # Test multiple bytes
     bits = np.array([1,1,1,1,0,0,0,0, 0,0,0,0,1,1,1,1])  # [240, 15]
-    assert np.array_equal(list_of_bits_to_list_of_int(bits), np.array([15, 240], dtype=np.uint8))
+    assert np.array_equal(list_of_bits_to_list_of_int(bits), np.array([240, 15], dtype=np.uint8))
 
     # Test all zeros
     bits = np.array([0,0,0,0,0,0,0,0])
@@ -57,4 +57,4 @@ def test_list_of_bits_to_list_of_int():
 
     # Test alternating bytes
     bits = np.array([1,0,1,0,1,0,1,0, 0,1,0,1,0,1,0,1])  # [170, 85]
-    assert np.array_equal(list_of_bits_to_list_of_int(bits), np.array([85, 170], dtype=np.uint8))
+    assert np.array_equal(list_of_bits_to_list_of_int(bits), np.array([170, 85], dtype=np.uint8))

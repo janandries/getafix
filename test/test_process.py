@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from config import Config
-from process import Processor, convert_pattern_row_to_gcode, convert_to_output, process_gcode
+from process import convert_pattern_row_to_gcode, convert_to_output, process_gcode
 from pattern import Pattern
 
 config_data = {
@@ -36,19 +36,19 @@ def test_pattern_size():
 
     conf = Config.from_dict(config_data)
     p = convert_gcode_to_pattern("", conf)
-    assert p.shape == (5, 5)
+    assert p.shape == (4, 20)
 
     config_data['bed_parameters']['x_size_mm'] = 24
     conf = Config.from_dict(config_data)
     p = convert_gcode_to_pattern("", conf)
-    assert p.shape == (5, 5)
+    assert p.shape == (4, 20)
 
 def test_input_output():    
     cfg = Config.from_file('machine.toml')
 
-    TEST_INPUT_FILENAME = "test/test_1_input.gcode"
-    TEST_OUTPUT_FILENAME = "test/test_1_output.test"
-    TEST_TRUTH_FILENAME = "test/test_1_output.gcode"
+    TEST_INPUT_FILENAME = "test/test_2_input.gcode"
+    TEST_OUTPUT_FILENAME = "test/test_2_output.test"
+    TEST_TRUTH_FILENAME = "test/test_2_output.gcode"
     
     with open(TEST_INPUT_FILENAME, 'r') as f:
         input_gcode = f.read()
