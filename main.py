@@ -25,13 +25,21 @@ def main():
 
             # Process the gcode
             output = process_gcode(input_gcode, config)
-
+            
             # Write output to file
             output_file = gcode_file.rsplit('.', 1)[0] + '_processed.gcode'
             with open(output_file, 'w') as f:
-                f.write(output)
+                f.write(output['gcode'])
 
             print(f"Processing complete. Output written to: {output_file}")
+
+            # check the config object for statistics
+            if 'statistics' in output:
+                print("\nStatistics:")
+                print("-" * 50)
+                for key, value in output['statistics'].items():
+                    print(f"{key:<25} {float(value):.5g}" if isinstance(value, (int, float)) else f"{key:<25} {value}")
+                print("-" * 50)
 
         except Exception as e:
             print(f"Error processing file: {str(e)}")

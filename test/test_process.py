@@ -56,12 +56,12 @@ def test_input_output():
 
     # write output to file so we can also manually compare
     with open(TEST_OUTPUT_FILENAME, 'w') as file:
-        file.write(output)
+        file.write(output['gcode'])
 
     #compare both files
     line_nr = -1
     with open(TEST_TRUTH_FILENAME, 'r') as truth:
-        output_lines = iter(output.splitlines(keepends=True))
+        output_lines = iter(output['gcode'].splitlines(keepends=True))
         while True:
             line_nr+=1
             t = truth.readline()

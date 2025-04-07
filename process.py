@@ -3,7 +3,7 @@ from gcode import GCodeMove
 import math
 from pattern import Pattern
 import re
-
+import numpy as np
 from util import list_of_bits_to_list_of_int
 from config import Config
 
@@ -171,18 +171,35 @@ def convert_to_output(pattern: Pattern, layer: int, config: Config) -> str:
     output += layer_end_cmd(config.machine_dimensions.y_initial_position)
     return output
 
+def calculate_fill_percentage(pattern: Pattern) -> float:
+    """
+    Calculate the percentage of non-zero values in a 2D numpy array.
+    
+    Args:
+        pattern: 2D numpy array
+        
+    Returns:
+        float: Percentage of non-zero values (0-100)
+    """
+    total_elements = pattern.size
+    non_zero_elements = np.count_nonzero(pattern)
+    return (non_zero_elements / total_elements) * 100
+
+
 def process_gcode(gcode: str, cfg: Config):
     """takes ins a gcode file, and process it line by line until finished
     it will output the processd gcode suitable for the machine
     """
-    
+    stats = {}
+
     layer_count_match = re.search(r';LAYER_COUNT:(\d+)', gcode)
     if not layer_count_match:
         raise ValueError("Could not find LAYER_COUNT in gcode")
     
     layer_count = int(layer_count_match.group(1))
     logger.debug(f"Found {layer_count} layers in gcode")
-    
+    stats["layers found"] = str(layer_count)
+
     output = print_begin_cmd(layer_count)
     
     # Find all layer indices by iterating once through the lines
@@ -194,6 +211,7 @@ def process_gcode(gcode: str, cfg: Config):
     if len(layer_indices) != layer_count:
         raise ValueError(f"Found {len(layer_indices)} layers but expected {layer_count}")
     
+    fill_factor = 0
     # Process each layer block using the line indices
     lines = gcode.splitlines()
     for i in range(layer_count):
@@ -206,8 +224,14 @@ def process_gcode(gcode: str, cfg: Config):
             layer_block = "\n".join(lines[start_line:])
             
         pattern = convert_gcode_to_pattern(layer_block, cfg)
+        fill_factor += calculate_fill_percentage(pattern)
         output += convert_to_output(pattern, i, cfg)
 
+    stats['Fill factor'] = fill_factor / layer_count
     output += print_end_cmd(layer_count)
     
-    return output
+    output_obj = {}
+    output_obj['gcode'] = output
+    output_obj['statistics'] = stats
+
+    return output_obj
