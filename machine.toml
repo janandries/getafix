@@ -1,0 +1,18 @@
+[machine_dimensions]
+x_initial_position = 0
+x_maximum_position = 1388
+
+y_initial_position = 118
+y_maximum_position = 1462
+y_feed_rate = 6000
+
+[nozzle_configuration]
+total_nozzles = 88
+nozzles_per_manifold = 8
+number_of_passes = 2
+
+[bed_parameters]
+x_size_mm = 880
+y_size_mm = 1343 
+resolution_mm = 5
+deposition_rate = 6000
