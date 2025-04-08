@@ -4,7 +4,7 @@ x_maximum_position = 1388
 
 y_initial_position = 118
 y_maximum_position = 1462
-y_feed_rate = 6000
+y_feed_rate = 4615 # 6000 orig
 
 [nozzle_configuration]
 total_nozzles = 88

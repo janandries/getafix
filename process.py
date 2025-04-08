@@ -32,7 +32,7 @@ def layer_begin_cmd(layer_idx: int, x_maximum_position: int, deposition_rate: in
         "FILL_HOPPER_ASYNC\n"
         "SET_FIRST_PASS\n"
         "Z_ONE_LAYER\n"
-        "PAUSE_PRINTER ;wait for button press\n"
+        "WAIT_FOR_MACHINE_READY\n"
         f"G1 X{x_maximum_position} F{deposition_rate}; deposit material\n"
     )
 
@@ -82,7 +82,7 @@ def convert_gcode_to_pattern(gcode: str, config: Config) -> Pattern:
         if target_pos.is_G1_command():
             tolerance = 1e-8
             if abs(target_pos.X - current_pos.X) > tolerance:
-                logger.warning("Begin and end coordinates do not have the same X-value")
+                logger.debug(f"Begin and end coordinates do not have the same X-value (current: {(current_pos.X, current_pos.Y, current_pos.E)}, target: {(target_pos.X, target_pos.Y, target_pos.E)})")
             elif abs(target_pos.Y - current_pos.Y) > 0:
                 begin, end = (target_pos, current_pos) if target_pos.Y <= current_pos.Y else (current_pos, target_pos)
                 pattern.add_line(config.machine2pattern_coord(begin.X), int(begin.Y), int(end.Y))
@@ -113,7 +113,6 @@ def convert_to_output(pattern: Pattern, layer: int, config: Config) -> str:
     if pattern.get_number_of_rows() > (config.machine_dimensions.y_maximum_position - config.machine_dimensions.y_initial_position):
         raise ValueError("The pattern contains more entries than the size of print bed allows")
 
-
     EXPECTED_LEN_ONE_ENTRY = 71
     n = pattern.get_number_of_rows() * EXPECTED_LEN_ONE_ENTRY + 1
     output = layer_begin_cmd(layer, config.machine_dimensions.x_maximum_position, config.bed_parameters.deposition_rate)
@@ -121,7 +120,7 @@ def convert_to_output(pattern: Pattern, layer: int, config: Config) -> str:
     #when two axes move together, klipper sees this as a diagonal move, and we need to increase
     # the feed rate by sqrt(2) to maintain desired velocity of each axis separately
     v_combined = int(math.sqrt(2)*config.machine_dimensions.y_feed_rate)
-    v_combined = 8460 #temporary to force the value to be same as the output we want to compare it with for the test
+    #v_combined = 8460 #temporary to force the value to be same as the output we want to compare it with for the test
     y_dest = config.machine_dimensions.y_initial_position
     x_dest = config.machine_dimensions.x_maximum_position - y_dest
 
@@ -197,9 +196,9 @@ def process_gcode(gcode: str, cfg: Config):
         raise ValueError("Could not find LAYER_COUNT in gcode")
     
     layer_count = int(layer_count_match.group(1))
-    logger.debug(f"Found {layer_count} layers in gcode")
+    print(f"Found {layer_count} layers in gcode")
     stats["layers found"] = str(layer_count)
-
+    stats["feedrate"] = str(cfg.machine_dimensions.y_feed_rate)
     output = print_begin_cmd(layer_count)
     
     # Find all layer indices by iterating once through the lines
@@ -223,6 +222,7 @@ def process_gcode(gcode: str, cfg: Config):
             # Last layer - take rest of file
             layer_block = "\n".join(lines[start_line:])
             
+        print(f"Processing layer {i+1}")
         pattern = convert_gcode_to_pattern(layer_block, cfg)
         fill_factor += calculate_fill_percentage(pattern)
         output += convert_to_output(pattern, i, cfg)
