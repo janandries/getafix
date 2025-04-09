@@ -36,7 +36,7 @@ def layer_begin_cmd(layer_idx: int, x_maximum_position: int, deposition_rate: in
         f"G1 X{x_maximum_position} F{deposition_rate}; deposit material\n"
     )
 
-def layer_return_cmd(y_return_position: int) -> str:
+def layer_return_cmd(y_return_position: int, y_feed_rate: int) -> str:
     """Generate the GCode commands for returning the print head to a specified Y position.
 
     This command sequence moves the print head to the end y position, disables all valves,
@@ -50,7 +50,7 @@ def layer_return_cmd(y_return_position: int) -> str:
         str: GCode command sequence for the return movement
     """
     return (
-        f"G1 Y{y_return_position} F6000\n"
+        f"G1 Y{y_return_position} F{y_feed_rate}\n"
         "VALVES_SET VALUES=0,0,0,0,0,0,0,0,0,0,0\n"
         f"G1 Y{y_return_position+1}\n"
         "FILL_HOPPER_ASYNC\n"
@@ -147,7 +147,7 @@ def convert_to_output(pattern: Pattern, layer: int, config: Config) -> str:
             raise IndexError("Number of rows in pattern exceeds size of the print bed")
     
     # reached end of stroke
-    output += layer_return_cmd(y_dest)
+    output += layer_return_cmd(y_dest, config.machine_dimensions.y_feed_rate)
     set_valves = True
     #back stroke    
     for row in pattern.T[::-1]:
