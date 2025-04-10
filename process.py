@@ -87,10 +87,6 @@ def convert_gcode_to_pattern(gcode: str, config: Config, current_pos: GCodeMove 
             elif abs(target_pos.Y - current_pos.Y) > 0:
                 begin, end = (target_pos, current_pos) if target_pos.Y <= current_pos.Y else (current_pos, target_pos)
                 pattern.add_line(config.machine2pattern_coord(begin.X), int(begin.Y), int(end.Y))
-                if (pattern>1).any():
-                    pass # used for debugging to check if no cell is set to a value different than 1
-        if pattern[0,0] > 0:
-            pass
         current_pos.update(target_pos)
 
 
