@@ -26,6 +26,7 @@ env/
 ENV/
 .env
 .venv
+getafix-env
 
 # IDE
 *.swp
@@ -48,3 +49,11 @@ desktop.ini
 output/       # If you have an output directory
 temp/         # Temporary files
 *.tmp
+*.test        # test output
+
+# specific test files
+test/test_1_input_processed.gcode
+test/test_2_input.gcode
+test/test_2_input_processed.gcode
+test/test_2_output.gcode
+test/test_2_output.test

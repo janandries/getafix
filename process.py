@@ -66,11 +66,12 @@ def layer_end_cmd(y_start_bed_pos: int) -> str:
     )
 
 # a function that converts a G-code and extracts the coordinates of the matrix object
-def convert_gcode_to_pattern(gcode: str, config: Config) -> Pattern:
+# the current_pos will contain the ending posision of the print head, so this can be used for the 
+# next iteration
+def convert_gcode_to_pattern(gcode: str, config: Config, current_pos: GCodeMove = GCodeMove(0,0,0,0)) -> Pattern:
     ps = (config.machine2pattern_coord(config.bed_parameters.x_size_mm),config.bed_parameters.y_size_mm)
     pattern = Pattern(ps)
 
-    current_pos = GCodeMove(0,0,0,0)
     for line in iter(gcode.splitlines()):
         try:
             target_pos = GCodeMove.fromstring(line)
@@ -82,7 +83,7 @@ def convert_gcode_to_pattern(gcode: str, config: Config) -> Pattern:
         if target_pos.is_G1_command():
             tolerance = 1e-8
             if abs(target_pos.X - current_pos.X) > tolerance:
-                logger.debug(f"Begin and end coordinates do not have the same X-value (current: {(current_pos.X, current_pos.Y, current_pos.E)}, target: {(target_pos.X, target_pos.Y, target_pos.E)})")
+                logger.warning(f"Begin and end coordinates do not have the same X-value (current: {(current_pos.X, current_pos.Y, current_pos.E)}, target: {(target_pos.X, target_pos.Y, target_pos.E)})")
             elif abs(target_pos.Y - current_pos.Y) > 0:
                 begin, end = (target_pos, current_pos) if target_pos.Y <= current_pos.Y else (current_pos, target_pos)
                 pattern.add_line(config.machine2pattern_coord(begin.X), int(begin.Y), int(end.Y))
@@ -91,6 +92,7 @@ def convert_gcode_to_pattern(gcode: str, config: Config) -> Pattern:
         if pattern[0,0] > 0:
             pass
         current_pos.update(target_pos)
+
 
     return pattern
     
@@ -213,6 +215,7 @@ def process_gcode(gcode: str, cfg: Config):
     fill_factor = 0
     # Process each layer block using the line indices
     lines = gcode.splitlines()
+    current_pos = GCodeMove(0,0,0,0)
     for i in range(layer_count):
         start_line = layer_indices[i]
         if i < layer_count - 1:
@@ -223,7 +226,7 @@ def process_gcode(gcode: str, cfg: Config):
             layer_block = "\n".join(lines[start_line:])
             
         print(f"Processing layer {i+1}")
-        pattern = convert_gcode_to_pattern(layer_block, cfg)
+        pattern = convert_gcode_to_pattern(layer_block, cfg, current_pos)
         fill_factor += calculate_fill_percentage(pattern)
         output += convert_to_output(pattern, i, cfg)
 

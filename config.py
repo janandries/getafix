@@ -76,7 +76,7 @@ class Config:
             return math.floor(coord / self.bed_parameters.resolution_mm)
         
     def get_bed_array_size(self) -> tuple[int, int]:
-        return(self.machine2pattern_coord(self.bed_parameters.x_size_mm, self.bed_parameters.y_size_mm))
+        return(self.machine2pattern_coord(self.bed_parameters.x_size_mm), self.bed_parameters.y_size_mm)
 
 default_config_empty = {
     'machine_dimensions': {

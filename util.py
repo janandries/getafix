@@ -71,3 +71,19 @@ def list_of_bits_to_list_of_int(bits: np.ndarray[np.uint8]) -> np.ndarray[np.uin
             pass
         result[i//8] = reverse_8_bits(val)
     return result
+
+def list_of_int_to_list_of_bits(values: np.ndarray[np.uint8]) -> np.ndarray[np.uint8]:
+    """Convert a numpy array of unsigned integers to a numpy array of bits.
+    
+    Args:
+        values: numpy array of n unsigned integers
+        
+    Returns:
+        Numpy array of length n*8 containing the individual bits from each integer
+    """
+    result = np.zeros(len(values) * 8, dtype=np.uint8)
+    for i, val in enumerate(values):
+        val = reverse_8_bits(val)  # Reverse bits to maintain consistency with list_of_bits_to_list_of_int
+        for j in range(8):
+            result[i*8 + j] = (val >> j) & 1
+    return result
