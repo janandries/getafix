@@ -7,7 +7,5 @@ After downloading and extracting the .zip (or cloning the repo)
 
 # 2. Run main.py
 - It is best to run main.py from a window so that when a error appears, you will see what error it is.
-
-
 - From the same cmd window as previous step, type: `python main.py` and press enter
 - Then select the original Cura-generate gcode file and follow instructions.
