@@ -4,7 +4,11 @@ x_maximum_position = 1388
 
 y_initial_position = 118
 y_maximum_position = 1462
-y_feed_rate = 4615 # 6000 orig
+y_feed_rate = 6137 #
+
+# whole of UGI has been printed at 4615
+# before that was 6000, before we realised we needed more water
+# now at higher pressure, with 33% more water flow, we can run at 6137
 
 [nozzle_configuration]
 total_nozzles = 88

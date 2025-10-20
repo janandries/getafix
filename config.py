@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import tomli
+import tomllib
 import math
 
 @dataclass
@@ -56,7 +56,7 @@ class Config:
     @classmethod
     def from_file(cls, file: str) -> 'Config':
         with open('machine.toml', 'rb') as f:
-            config_dict = tomli.load(f)
+            config_dict = tomllib.load(f)
             return cls.from_dict(config_dict)
         
     def pattern2machine_coord(self, coord):
